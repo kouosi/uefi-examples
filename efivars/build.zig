@@ -1,16 +1,19 @@
-const Builder = @import("std").build.Builder;
-const Target = @import("std").Target;
-const CrossTarget = @import("std").zig.CrossTarget;
-const builtin = @import("builtin");
+const std = @import("std");
 
-pub fn build(b: *Builder) void {
-    const exe = b.addExecutable("bootx64", "main.zig");
-    exe.setBuildMode(b.standardReleaseOptions());
-    exe.setTarget(CrossTarget{
-        .cpu_arch = Target.Cpu.Arch.x86_64,
-        .os_tag = Target.Os.Tag.uefi,
-        .abi = Target.Abi.msvc,
+pub fn build(b: *std.Build) void {
+    const uefi_target = std.Target.Query{
+        .os_tag = .uefi,
+        .cpu_arch = .x86_64,
+        .abi = .msvc,
+    };
+    const target = b.standardTargetOptions(.{ .default_target = uefi_target });
+    const optimize = b.standardOptimizeOption(.{ .preferred_optimize_mode = .ReleaseSafe });
+
+    const app = b.addExecutable(.{
+        .name = "bootx64",
+        .root_source_file = b.path("main.zig"),
+        .optimize = optimize,
+        .target = target,
     });
-    exe.setOutputDir("efi/boot");
-    b.default_step.dependOn(&exe.step);
+    b.installArtifact(app);
 }
